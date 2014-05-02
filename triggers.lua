@@ -11,6 +11,34 @@ awards.onChat = {}
 awards.onDeath = {}
 awards.onJoin = {}
 
+function awards._do_callbacks(callbacks, plural, name, data, handle_table)
+	local player = minetest.get_player_by_name(name)
+	for _,trigger in pairs(callbacks) do
+		local res = nil
+		if type(trigger) == "function" then
+			res = trigger(player,data)
+		elseif type(trigger) == "table" then
+			res = handle_table(trigger)
+		end
+		if res ~= nil then
+			awards.give_achievement(name,res)
+		end
+	end
+end
+
+function awards._do_callbacks_simple(callbacks, plural, name, data)
+	awards._do_callbacks(callbacks, plural, name, data, function(trigger)
+		if trigger.target and trigger.award then
+			print("data: "..data[plural].." vs "..trigger.target.." for "..trigger.award)
+			if data[plural] and data[plural]+0 >= trigger.target+0 then
+				print("Triggering...")
+				return trigger.award
+			end
+		end
+		return nil
+	end)
+end
+
 -- Trigger Handles
 minetest.register_on_dignode(function(pos, oldnode, digger)
 	if not digger or not pos or not oldnode then
@@ -137,21 +165,7 @@ minetest.register_on_dieplayer(function(player)
 	data.deaths = data.deaths + 1
 	
 	-- Run callbacks and triggers
-	for _,trigger in pairs(awards.onDeath) do
-		local res = nil
-		if type(trigger) == "function" then
-			res = trigger(player,data)
-		elseif type(trigger) == "table" then
-			if trigger.target and trigger.award then
-				if data.deaths and data.deaths >= trigger.target then
-					res = trigger.award
-				end
-			end
-		end
-		if res ~= nil then
-			awards.give_achievement(name,res)
-		end
-	end
+	awards._do_callbacks_simple(awards.onDeath, "deaths", name, data)
 end)
 
 minetest.register_on_joinplayer(function(player)
@@ -169,21 +183,7 @@ minetest.register_on_joinplayer(function(player)
 	data.joins = data.joins + 1
 	
 	-- Run callbacks and triggers
-	for _,trigger in pairs(awards.onJoin) do
-		local res = nil
-		if type(trigger) == "function" then
-			res = trigger(player,data)
-		elseif type(trigger) == "table" then
-			if trigger.target and trigger.award then
-				if data.joins and data.joins >= trigger.target then
-					res = trigger.award
-				end
-			end
-		end
-		if res ~= nil then
-			awards.give_achievement(name,res)
-		end
-	end
+	awards._do_callbacks_simple(awards.onJoin, "joins", name, data)
 end)
 
 minetest.register_on_chat_message(function(name, message)
@@ -196,27 +196,12 @@ minetest.register_on_chat_message(function(name, message)
 	-- Get player
 	awards.assertPlayer(name)
 	local data = awards.players[name]
-	local player = minetest.get_player_by_name(name)
 	
 	-- Increment counter
 	data.chats = data.chats + 1
 	
 	-- Run callbacks and triggers	
-	for _,trigger in pairs(awards.onChat) do
-		local res = nil
-		if type(trigger) == "function" then
-			res = trigger(player,data)
-		elseif type(trigger) == "table" then
-			if trigger.target and trigger.award then
-				if data.chats and data.chats >= trigger.target then
-					res = trigger.award
-				end
-			end
-		end
-		if res ~= nil then
-			awards.give_achievement(name,res)
-		end
-	end
+	awards._do_callbacks_simple(awards.onChat, "chats", name, data)
 end)
 
 minetest.register_on_newplayer(function(player)

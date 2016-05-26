@@ -216,7 +216,7 @@ awards.register_achievement("award_youre_winner",{
 
 -- Found a Nyan cat!
 awards.register_achievement("award_nyanfind",{
-	title = S("OMG, Nyan Cat!"),
+	title = S("Nyan Cat!"),
 	description = S("Find a nyan cat."),
 	icon = "default_nc_rb.png",
 	trigger = {
